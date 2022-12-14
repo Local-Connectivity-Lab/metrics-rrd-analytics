@@ -1,0 +1,10 @@
+## Bindings to system-installed programs
+rrdtool == 0.1.16
+
+## Interactive environments
+notebook
+ipython
+
+## Analytics libs
+pandas
+matplotlib

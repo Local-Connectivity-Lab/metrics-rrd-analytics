@@ -1,0 +1,10 @@
+services:
+  main:
+    build:
+      context: .
+      tags: ['local-connectivity-lab/metrics-rrd-analysis']
+    volumes:
+      - ./:/home/othello/Code/
+    ports:
+      - 8888:8888
+    command: ['./start-notebook.sh']
