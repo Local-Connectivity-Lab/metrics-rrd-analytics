@@ -1,23 +1,26 @@
 This repo contains analytics performed on metrics we gather via SNMP.
 
 ```
-LibreNMS --> rrd databases --> rrdtool fetch --> python graphing libraries
+LibreNMS --> RRD databases --> rrdtool fetch --> python graphing libraries
 ```
 
 Essentially, we extract data from RRD databases, and plot using not `rrdtool` but mainstream graphing libraries.
 
 ## First-time setup
 
-Run this command. This ensures that we don't commit notebooks' outputs.
-
 ```sh
+# Ensure we don't commit notebooks' outputs.
 git config --local include.path ../.gitconfig
+
+# The git hook we added above runs a `jupyter` command. We need to install it.
+# First, install a python version manager, eg pyenv.
+curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+# It's ok to install notebook globally (rather than in a venv).
+pip install notebook
+
+cp ./.env.example ./.env
+# Then modify `.env` with correct values.
 ```
-
-Install jupyter notebook on the host where you'll be executing `git commit`:
-
-1. `pip install notebook`
-    (This installs a notebook globally to your python installation. If you prefer to isolate its installation to this project, see instructions on `venv` below.)
 
 ## Runing the notebook server
 
@@ -25,37 +28,42 @@ Install jupyter notebook on the host where you'll be executing `git commit`:
 
 Bringup:
 1. `docker compose up --build -d`
-1. Optionally, to use a shell inside the container (without going through a notebook), then
+1. Optionally, to use a shell inside the container (without going through a notebook),
     `docker compose exec -it main bash`
+1. Go to http://localhost:8888/
 
 Teardown:
 1. `docker compose down`
 
-### Option B: Running without Docker
+### Option B: Running in venv
 
 First-time setup:
-1. [Install pyenv](https://github.com/pyenv/pyenv#installation)
-1. `python -m venv ./venv`
+```sh
+sudo apt update
+sudo apt install -y rrdtool librrd-dev
+
+pip install ipykernel
+python -m ipykernel install --user --name="${PWD##*/}"
+python -m venv ./venv
+source ./venv/bin/activate
+pip install -r ./requirements.txt
+deactivate
+```
 
 Bringup:
 1. `source ./venv/bin/activate`
 1. `./start-notebook.sh &`
+1. Go to http://localhost:8888/
+1. Select the kernel that's named same as this dir.
 
 Teardown:
 1. Kill jupyter notebook: `kill %1`
 1. `deactivate`
 
-Caveat: On MacOS, it is unknown whether `brew rrdtool` installs the headers required by python package `rrdtool`. For consistency, MacOS users are recommended to use Docker.
+Caveat: On MacOS, it is unknown whether `brew install rrdtool` installs the headers required by the python package `rrdtool`. For consistency, MacOS users are recommended to use Docker.
 
 ### Option C: Running on Colab
 
 Running on Colab is not supported, for now. To run there, we should
 - dedicate a Google Drive to storing RRD files as their snapshots
 - adapt our utils to scp from production to this Google Drive
-
-1. Go to https://colab.research.google.com/github/
-1. Enter the github url of this repo.
-
-## Accessing the notebook server
-
-http://localhost:8888/

@@ -4,7 +4,10 @@ services:
       context: .
       tags: ['local-connectivity-lab/metrics-rrd-analysis']
     volumes:
+      - ~/.ssh/:/home/othello/.ssh/
       - ./:/home/othello/Code/
+    extra_hosts:
+      - "${NMS_HOST_NAME}:${NMS_HOST_IP}"
     ports:
       - 8888:8888
     command: ['./start-notebook.sh']

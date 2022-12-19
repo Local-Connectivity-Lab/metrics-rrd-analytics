@@ -1,52 +1,59 @@
 ## Stdlib
-from enum import StrEnum
 import os
-from typing import Dict
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
+from typing import Dict, Tuple
 
 ## Non-std libs
+from dotenv import dotenv_values
 import pandas as pd
 import rrdtool
 
-class RrdDirpath(StrEnum):
-    PROD = '/opt/librenms/rrd'
-    LOCAL = './data'
+DOTENV_ENTRIES = dotenv_values()
 
-## site :: nickname :: rrd relative file path
-RRD_RELPATHS = {
-    'fcs': SimpleNamespace(
-        uplink='fcs1/port-id1874.rrd',
-        avail_weekly='fcs1/availability-2592000.rrd',
-        ping='fcs1/ping-perf.rrd',
-    ),
-    'garfield': SimpleNamespace(
-        uplink='sps-garfield/port-id190.rrd',
-        avail_weekly='sps-garfield/availability-2592000.rrd',
-        ping='sps-garfield/ping-perf.rrd',
-    ),
-    'occ': SimpleNamespace(
-        uplink='scn-occ/port-id5175.rrd',
-        avail_weekly='scn-occ/availability-2592000.rrd',
-        ping='scn-occ/ping-perf.rrd',
-    ),
-    'tcn_surge': SimpleNamespace(
-        uplink='tcn-surge/port-id507.rrd',
-        avail_weekly='tcn-surge/availability-2592000.rrd',
-        ping='tcn-surge/ping-perf.rrd',
-    )
-}
+## nickname :: rrd filename
+DEVICE_AGNOSTIC_RRD_FILENAMES = SimpleNamespace(
+    latency='ping-perf.rrd',
+    avail_weekly='availability-2592000.rrd',
+)
 
-def rrd_path(dirpath: RrdDirpath, relpath: str) -> str:
-    return f'{dirpath}/{relpath}'
+DEVICES_PORTS_FILE='./data/devices_ports.csv'
 
-def rrd_to_dataframe(rrd_relpath: str, start_time: str, end_time: str = None) -> pd.DataFrame:
+def write_devices_ports(df: pd.DataFrame) -> None:
+    os.makedirs(Path(DEVICES_PORTS_FILE).parent, exist_ok=True)
+    df.to_csv(DEVICES_PORTS_FILE, index=False)
+
+_cached_devices_ports: Tuple[float, pd.DataFrame] = None
+def read_devices_ports() -> pd.DataFrame:
+    global _cached_devices_ports
+    mod_time = os.stat(DEVICES_PORTS_FILE).st_mtime
+    if _cached_devices_ports is None or _cached_devices_ports[0] != mod_time:
+        df = pd.read_csv(DEVICES_PORTS_FILE)
+        _cached_devices_ports = (mod_time, df)
+    return _cached_devices_ports[1]
+
+def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
+    return f"/opt/librenms/rrd/{device_hostname}/{rrd_filename}"
+
+# Caveat: It's unknown whether scp causes some race condition with other procs writing to the file.
+# We do have rrdcached enabled. An alternative is to query rrdcached api
+#   (https://oss.oetiker.ch/rrdtool/doc/rrdcached.en.html#FETCH_filename_CF_[start_[end]_[ds_...]])
+#   but then we'd have to netcat to it and parse raw bytes, rather than the convenient `rrdtool.fetch()`.
+# Another anternative is to simply run all analyses on the nms server.
+#   To do this, we need to provision more hardware from the cloud.
+def download_rrd(remote_filepath: str, local_filepath: str) -> None:
+    ssh_key_filepath = f"~/.ssh/{DOTENV_ENTRIES['SSH_KEY_FILENAME']}"
+    nms_host = DOTENV_ENTRIES['NMS_HOST_NAME']
+    remote_cmd = f"scp -i {ssh_key_filepath} {nms_host}:{remote_filepath} {local_filepath}"
+    ret = os.system(remote_cmd)
+    assert ret == 0
+
+def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -> pd.DataFrame:
     '''
-    @arg rrd_relpath: RRD_RELPATHS.foo.bar
     @arg start_time and end_time: https://oss.oetiker.ch/rrdtool/doc/rrdfetch.en.html#AT-STYLE_TIME_SPECIFICATION
         end_time defaults to the time of RRD's last received update.
     '''
-    rrd_fullpath = rrd_path(RrdDirpath.LOCAL, rrd_relpath)
-
     if end_time is None:
         info = rrdtool.info(rrd_fullpath)
         end_time = str(info['last_update'])
@@ -65,11 +72,10 @@ def rrd_to_dataframe(rrd_relpath: str, start_time: str, end_time: str = None) ->
     df = pd.DataFrame(data=df_rows, columns=df_cols)
     return df
 
-def collect_rrd_dataframes(nickname: str, start_time: str, end_time: str = None) -> Dict[str, pd.DataFrame]:
-    site_to_df = dict()
-    for (site, nickname_to_relpath) in RRD_RELPATHS.items():
-        rrd_relpath = getattr(nickname_to_relpath, nickname)
-        if rrd_relpath is not None:
-            df = rrd_to_dataframe(rrd_relpath, start_time, end_time)
-            site_to_df[site] = df
-    return site_to_df
+def read_rrd(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> pd.DataFrame:
+    rrd_filepath = format_rrd_filepath(device_hostname, rrd_filename)
+
+    with tempfile.NamedTemporaryFile() as f:
+        download_rrd(rrd_filepath, f.name)
+
+        return rrd_to_dataframe(f.name, start_time, end_time)

@@ -3,7 +3,10 @@ rrdtool == 0.1.16
 
 ## Interactive environments
 notebook
-ipython
+
+## Utility libs
+python-dotenv
+requests
 
 ## Analytics libs
 pandas
