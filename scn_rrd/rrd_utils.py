@@ -1,9 +1,7 @@
 ## Stdlib
 import os
-from pathlib import Path
 import tempfile
-from types import SimpleNamespace
-from typing import Dict, Tuple
+from typing import Dict, List
 
 ## Non-std libs
 from dotenv import dotenv_values
@@ -11,27 +9,6 @@ import pandas as pd
 import rrdtool
 
 DOTENV_ENTRIES = dotenv_values()
-
-## nickname :: rrd filename
-DEVICE_AGNOSTIC_RRD_FILENAMES = SimpleNamespace(
-    latency='ping-perf.rrd',
-    avail_weekly='availability-2592000.rrd',
-)
-
-DEVICES_PORTS_FILE='./data/devices_ports.csv'
-
-def write_devices_ports(df: pd.DataFrame) -> None:
-    os.makedirs(Path(DEVICES_PORTS_FILE).parent, exist_ok=True)
-    df.to_csv(DEVICES_PORTS_FILE, index=False)
-
-_cached_devices_ports: Tuple[float, pd.DataFrame] = None
-def read_devices_ports() -> pd.DataFrame:
-    global _cached_devices_ports
-    mod_time = os.stat(DEVICES_PORTS_FILE).st_mtime
-    if _cached_devices_ports is None or _cached_devices_ports[0] != mod_time:
-        df = pd.read_csv(DEVICES_PORTS_FILE)
-        _cached_devices_ports = (mod_time, df)
-    return _cached_devices_ports[1]
 
 def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
     return f"/opt/librenms/rrd/{device_hostname}/{rrd_filename}"
@@ -79,3 +56,10 @@ def read_rrd(device_hostname: str, rrd_filename: str, start_time: str, end_time:
         download_rrd(rrd_filepath, f.name)
 
         return rrd_to_dataframe(f.name, start_time, end_time)
+
+def read_rrds(device_hostnames: List[str], rrd_filename: str, start_time: str, end_time: str = None) -> Dict[str, pd.DataFrame]:
+    return {
+        name :
+        read_rrd(name, rrd_filename, start_time, end_time)
+        for name in device_hostnames
+    }
