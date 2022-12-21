@@ -13,8 +13,10 @@ Essentially, we extract data from RRD databases, and plot using not `rrdtool` bu
 git config --local include.path ../.gitconfig
 
 # The git hook we added above runs a `jupyter` command. We need to install it.
-# First, install a python version manager, eg pyenv.
+# First, install a python version manager, e.g. pyenv.
 curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+# Install python with version specified in `.python-version`.
+pyenv install --skip-existing
 # It's ok to install notebook globally (rather than in a venv).
 pip install notebook
 

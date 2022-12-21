@@ -1,7 +1,7 @@
 ## Stdlib
 import os
 import tempfile
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 ## Non-std libs
 from dotenv import dotenv_values
@@ -19,12 +19,15 @@ def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
 #   but then we'd have to netcat to it and parse raw bytes, rather than the convenient `rrdtool.fetch()`.
 # Another anternative is to simply run all analyses on the nms server.
 #   To do this, we need to provision more hardware from the cloud.
-def download_rrd(remote_filepath: str, local_filepath: str) -> None:
+def download_rrd(remote_filepath: str, local_filepath: str) -> bool:
+    '''
+    @return bool: success
+    '''
     ssh_key_filepath = f"~/.ssh/{DOTENV_ENTRIES['SSH_KEY_FILENAME']}"
     nms_host = DOTENV_ENTRIES['NMS_HOST_NAME']
     remote_cmd = f"scp -i {ssh_key_filepath} {nms_host}:{remote_filepath} {local_filepath}"
     ret = os.system(remote_cmd)
-    assert ret == 0
+    return ret == 0
 
 def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -> pd.DataFrame:
     '''
@@ -49,17 +52,20 @@ def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -
     df = pd.DataFrame(data=df_rows, columns=df_cols)
     return df
 
-def read_rrd(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> pd.DataFrame:
+def read_rrd(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> Optional[pd.DataFrame]:
     rrd_filepath = format_rrd_filepath(device_hostname, rrd_filename)
 
     with tempfile.NamedTemporaryFile() as f:
-        download_rrd(rrd_filepath, f.name)
-
-        return rrd_to_dataframe(f.name, start_time, end_time)
+        success = download_rrd(rrd_filepath, f.name)
+        if success:
+            return rrd_to_dataframe(f.name, start_time, end_time)
+        else:
+            return None
 
 def read_rrds(device_hostnames: List[str], rrd_filename: str, start_time: str, end_time: str = None) -> Dict[str, pd.DataFrame]:
-    return {
-        name :
-        read_rrd(name, rrd_filename, start_time, end_time)
-        for name in device_hostnames
-    }
+    ret = dict()
+    for device_hostname in device_hostnames:
+        rrd = read_rrd(device_hostname, rrd_filename, start_time, end_time)
+        if rrd is not None:
+            ret[device_hostname] = rrd
+    return ret
