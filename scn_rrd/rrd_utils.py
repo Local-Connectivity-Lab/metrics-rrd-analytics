@@ -4,11 +4,11 @@ import tempfile
 from typing import Dict, List, Optional
 
 ## Non-std libs
-from dotenv import dotenv_values
 import pandas as pd
 import rrdtool
 
-DOTENV_ENTRIES = dotenv_values()
+## Local modules
+from .rrd_meta_utils import DOTENV_ENTRIES
 
 def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
     return f"/opt/librenms/rrd/{device_hostname}/{rrd_filename}"
@@ -26,8 +26,8 @@ def download_rrd(remote_filepath: str, local_filepath: str) -> bool:
     ssh_key_filepath = f"~/.ssh/{DOTENV_ENTRIES['SSH_KEY_FILENAME']}"
     nms_host = DOTENV_ENTRIES['NMS_HOST_NAME']
     nms_user = DOTENV_ENTRIES['NMS_USER_NAME']
-    remote_cmd = f"scp -i {ssh_key_filepath} {nms_user}@{nms_host}:{remote_filepath} {local_filepath}"
-    ret = os.system(remote_cmd)
+    scp_cmd = f"scp -i {ssh_key_filepath} {nms_user}@{nms_host}:{remote_filepath} {local_filepath}"
+    ret = os.system(scp_cmd)
     return ret == 0
 
 def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -> pd.DataFrame:

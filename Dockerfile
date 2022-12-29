@@ -13,6 +13,8 @@ RUN apt update && \
       `## docker container management` \
       dumb-init \
       sudo \
+      `## utils` \
+      sshpass \
       `## rrd` \
       rrdtool \
       librrd-dev \

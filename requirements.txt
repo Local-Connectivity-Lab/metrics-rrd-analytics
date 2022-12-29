@@ -9,5 +9,5 @@ python-dotenv
 requests
 
 ## Analytics libs
-pandas
 matplotlib
+pandas
