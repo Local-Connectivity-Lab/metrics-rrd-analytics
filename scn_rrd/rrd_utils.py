@@ -53,7 +53,7 @@ def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -
     df = pd.DataFrame(data=df_rows, columns=df_cols)
     return df
 
-def read_rrd(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> Optional[pd.DataFrame]:
+def read_rrd_via_scp(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> Optional[pd.DataFrame]:
     rrd_filepath = format_rrd_filepath(device_hostname, rrd_filename)
 
     with tempfile.NamedTemporaryFile() as f:
@@ -66,7 +66,7 @@ def read_rrd(device_hostname: str, rrd_filename: str, start_time: str, end_time:
 def read_rrds(device_hostnames: List[str], rrd_filename: str, start_time: str, end_time: str = None) -> Dict[str, pd.DataFrame]:
     ret = dict()
     for device_hostname in device_hostnames:
-        rrd = read_rrd(device_hostname, rrd_filename, start_time, end_time)
+        rrd = read_rrd_via_scp(device_hostname, rrd_filename, start_time, end_time)
         if rrd is not None:
             ret[device_hostname] = rrd
     return ret
