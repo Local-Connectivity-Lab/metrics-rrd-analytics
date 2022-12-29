@@ -25,7 +25,8 @@ def download_rrd(remote_filepath: str, local_filepath: str) -> bool:
     '''
     ssh_key_filepath = f"~/.ssh/{DOTENV_ENTRIES['SSH_KEY_FILENAME']}"
     nms_host = DOTENV_ENTRIES['NMS_HOST_NAME']
-    remote_cmd = f"scp -i {ssh_key_filepath} {nms_host}:{remote_filepath} {local_filepath}"
+    nms_user = DOTENV_ENTRIES['NMS_USER_NAME']
+    remote_cmd = f"scp -i {ssh_key_filepath} {nms_user}@{nms_host}:{remote_filepath} {local_filepath}"
     ret = os.system(remote_cmd)
     return ret == 0
 
