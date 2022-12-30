@@ -14,7 +14,8 @@ git config --local include.path ../.gitconfig
 
 # The git hook we added above runs a `jupyter` command. We need to install it.
 # First, install a python version manager, e.g. pyenv.
-curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+# (make sure you follow the directions from the pyenv installer to modify your shell's .rc file)
+curl https://pyenv.run | bash
 # Install python with version specified in `.python-version`.
 pyenv install --skip-existing
 # It's ok to install notebook globally (rather than in a venv).
@@ -42,7 +43,7 @@ Teardown:
 First-time setup:
 ```sh
 sudo apt update
-sudo apt install -y rrdtool librrd-dev
+sudo apt install -y rrdtool librrd-dev libsqlite3-dev libbz2-dev
 
 pip install ipykernel
 python -m ipykernel install --user --name="${PWD##*/}"
