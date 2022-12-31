@@ -14,6 +14,7 @@ DOTENV_ENTRIES = dotenv_values()
 DEVICE_AGNOSTIC_RRD_FILENAMES = SimpleNamespace(
     latency='ping-perf.rrd',
     avail_weekly='availability-2592000.rrd',
+    avail_daily='availability-86400.rrd',
 )
 
 ## Only eNB devices have these rrd files.
