@@ -1,4 +1,5 @@
 ## A module containing an alternative way to retrieve RRD info, by running `rrdtool fetch` remotely then parsing its stdout locally.
+## This is necessary if a remote rrd file is incompatible with the locally installed `rrdtool` version.
 
 ## Stdlib
 import re
@@ -28,7 +29,7 @@ def read_rrd_via_stdout(
 
     stdout_str = proc_res.stdout.decode('ascii')
     stdout_lines = stdout_str.split('\n')
-    (ds_names_line, _empty_line, *row_lines) = stdout_lines
+    (ds_names_line, *row_lines) = stdout_lines
 
     ds_names = re.split('\s+', ds_names_line)
     ds_names = list(filter(None, ds_names))
