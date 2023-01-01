@@ -53,6 +53,8 @@ def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -
     df = pd.DataFrame(data=df_rows, columns=df_cols)
     return df
 
+# TODO cleanup ...
+# - Both read_rrd_via_scp and read_rrd_via_stdout should be able to take both ssh key or password.
 def read_rrd_via_scp(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> Optional[pd.DataFrame]:
     rrd_filepath = format_rrd_filepath(device_hostname, rrd_filename)
 

@@ -4,15 +4,15 @@
 ## Stdlib
 import re
 import subprocess
-from typing import List, Optional
+from typing import List
 
 ## Non-std libs
 import pandas as pd
 
-def read_rrd_via_stdout(
+def rrd_fetch_via_stdout(
     remote_host: str, remote_user: str, remote_pw: str,
     rrd_filepath: str, start_time: str, end_time: str = None,
-) -> Optional[pd.DataFrame]:
+) -> str:
     '''
     @arg start_time and end_time: https://oss.oetiker.ch/rrdtool/doc/rrdfetch.en.html#AT-STYLE_TIME_SPECIFICATION
         end_time defaults to 'now'.
@@ -28,6 +28,9 @@ def read_rrd_via_stdout(
     proc_res = subprocess.run(remote_cmd, stdout=subprocess.PIPE)
 
     stdout_str = proc_res.stdout.decode('ascii')
+    return stdout_str
+
+def rrd_stdout_to_dataframe(stdout_str: str) -> pd.DataFrame:
     stdout_lines = stdout_str.split('\n')
     (ds_names_line, *row_lines) = stdout_lines
 
@@ -49,4 +52,8 @@ def read_rrd_via_stdout(
     df = pd.DataFrame(data=rows, columns=ds_names)
     df['time'] = pd.to_datetime(df['time'], unit='s')
     return df
-    
+
+def read_rrd_via_stdout(*args, **kwargs) -> pd.DataFrame:
+    stdout_lines = rrd_fetch_via_stdout(*args, **kwargs)
+    df = rrd_stdout_to_dataframe(stdout_lines)
+    return df

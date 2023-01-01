@@ -16,15 +16,18 @@ PHYS_LOCS = [
     'sps-garfield',
 ]
 
-## Each value must be one of `PHYS_LOCS`.
+LOGICAL_LOC_TO_PHYS_LOCS = {
+    'FCS': ['FCS'],
+    'northlake': ['northlake'],
+    'occ-oromo': ['occ-oromo', 'lihi-southend'],
+    'sps-franklin': ['sps-franklin'],
+    'sps-garfield': ['sps-garfield', 'nickelsville-cd']
+}
+
 PHYS_LOC_TO_LOGICAL_LOC = {
-    'FCS': 'FCS',
-    'lihi-southend': 'occ-oromo',
-    'nickelsville-cd': 'sps-garfield',
-    'northlake': 'northlake',
-    'occ-oromo': 'occ-oromo',
-    'sps-garfield': 'sps-garfield',
-    'sps-franklin': 'sps-franklin',
+    phy: logi
+    for (logi, phys) in LOGICAL_LOC_TO_PHYS_LOCS.items()
+    for phy in phys
 }
 
 ## Key = one of PHYS_LOCS.
