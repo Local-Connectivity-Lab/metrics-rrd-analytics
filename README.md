@@ -43,7 +43,7 @@ Teardown:
 First-time setup:
 ```sh
 sudo apt update
-sudo apt install -y rrdtool librrd-dev libsqlite3-dev libbz2-dev
+sudo apt install -y rrdtool librrd-dev libsqlite3-dev libbz2-dev sshpass
 
 pip install ipykernel
 python -m ipykernel install --user --name="${PWD##*/}"
