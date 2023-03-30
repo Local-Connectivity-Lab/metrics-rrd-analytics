@@ -20,11 +20,6 @@ def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
     return f"/opt/librenms/rrd/{device_hostname}/{rrd_filename}"
 
 # Caveat: It's unknown whether scp causes some race condition with other procs writing to the file.
-# We do have rrdcached enabled. An alternative is to query rrdcached api
-#   (https://oss.oetiker.ch/rrdtool/doc/rrdcached.en.html#FETCH_filename_CF_[start_[end]_[ds_...]])
-#   but then we'd have to netcat to it and parse raw bytes, rather than the convenient `rrdtool.fetch()`.
-# Another anternative is to simply run all analyses on the nms server.
-#   To do this, we need to provision more hardware from the cloud.
 def download_rrd(remote_filepath: str, local_filepath: str) -> bool:
     '''
     @return bool: success
@@ -59,8 +54,6 @@ def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -
     df = pd.DataFrame(data=df_rows, columns=df_cols)
     return df
 
-# TODO cleanup ...
-# - Both read_rrd_via_scp and read_rrd_via_stdout should be able to take both ssh key or password.
 def read_rrd_via_scp(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> Optional[pd.DataFrame]:
     rrd_filepath = format_rrd_filepath(device_hostname, rrd_filename)
 
