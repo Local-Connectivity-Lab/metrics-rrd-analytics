@@ -32,9 +32,7 @@ def __rrd_fetch_via_rrdcached(
     if proc_res.returncode != 0:
         return None
 
-    # print(proc_res)
     stdout_str = proc_res.stdout.decode('ascii')
-    # print(stdout_str)
     return stdout_str
 
 def __stdout_to_dataframe(stdout_str: str) -> pd.DataFrame:
@@ -60,7 +58,7 @@ def __stdout_to_dataframe(stdout_str: str) -> pd.DataFrame:
     df['time'] = pd.to_datetime(df['time'], unit='s')
     return df
 
-def read_rrd(*args, **kwargs) -> pd.DataFrame:
+def read_rrd(*args, **kwargs) -> Optional[pd.DataFrame]:
     stdout_str = __rrd_fetch_via_rrdcached(*args, **kwargs)
     if stdout_str is None:
         return None

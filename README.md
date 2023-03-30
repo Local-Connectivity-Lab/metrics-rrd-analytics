@@ -25,6 +25,15 @@ cp ./.env.example ./.env
 # Then modify `.env` with correct values.
 ```
 
+## Connection setup
+
+1. Connect to the SCN management VPN (the main one).
+1. Some devices have flaky ssh connectivity. To work around it, change your local computer's OpenVPN interface's MTU.
+    1. `ip address` --> determine the OpenVPN interface. It should be named `utun0` or similar.
+    1. `sudo ip link set dev utun0 mtu 1300`
+    - You might have to set this every time your local computer's OpenVPN process is restarted.
+    - These `iproute2` commands work on MacOS after `brew install iproute2mac`.
+
 ## Runing the notebook server
 
 ### Option A: Running in Docker

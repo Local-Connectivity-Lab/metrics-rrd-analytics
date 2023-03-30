@@ -25,6 +25,9 @@ MIKROTIK_DEVICE_RRD_FILENAMES = SimpleNamespace(
     clients='routeros_leases.rrd'
 )
 
+def format_port_rrd_filename(port_id: int) -> str:
+    return f"port-id{port_id}.rrd"
+
 def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
     '''
     LibreNMS manages RRD files as
