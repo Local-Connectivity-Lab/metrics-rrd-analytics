@@ -14,6 +14,7 @@ RUN apt update && \
       dumb-init \
       sudo \
       `## utils` \
+      rsync \
       sshpass \
       `## rrd` \
       rrdtool \
