@@ -1,74 +1,68 @@
 ## Stdlib
-import os
-import tempfile
-from typing import Dict, List, Optional
+import re
+import subprocess
+from typing import Optional
 
 ## Non-std libs
 import pandas as pd
-import rrdtool
 
-## Local modules
-from .rrd_meta_utils import DOTENV_ENTRIES
-
-def format_rrd_filepath(device_hostname: str, rrd_filename: str) -> str:
-    return f"/opt/librenms/rrd/{device_hostname}/{rrd_filename}"
-
-# Caveat: It's unknown whether scp causes some race condition with other procs writing to the file.
-# We do have rrdcached enabled. An alternative is to query rrdcached api
-#   (https://oss.oetiker.ch/rrdtool/doc/rrdcached.en.html#FETCH_filename_CF_[start_[end]_[ds_...]])
-#   but then we'd have to netcat to it and parse raw bytes, rather than the convenient `rrdtool.fetch()`.
-# Another anternative is to simply run all analyses on the nms server.
-#   To do this, we need to provision more hardware from the cloud.
-def download_rrd(remote_filepath: str, local_filepath: str) -> bool:
-    '''
-    @return bool: success
-    '''
-    ssh_key_filepath = f"~/.ssh/{DOTENV_ENTRIES['SSH_KEY_FILENAME']}"
-    nms_host = DOTENV_ENTRIES['NMS_HOST_NAME']
-    nms_user = DOTENV_ENTRIES['NMS_USER_NAME']
-    scp_cmd = f"rsync -az -e 'ssh -i {ssh_key_filepath}' {nms_user}@{nms_host}:{remote_filepath} {local_filepath}"
-    ret = os.system(scp_cmd)
-    return ret == 0
-
-def rrd_to_dataframe(rrd_fullpath: str, start_time: str, end_time: str = None) -> pd.DataFrame:
+def __rrd_fetch_via_rrdcached(
+    remote_host: str,
+    remote_rrd_filepath: str,
+    start_time: str,
+    end_time: str = None,
+) -> Optional[str]:
     '''
     @arg start_time and end_time: https://oss.oetiker.ch/rrdtool/doc/rrdfetch.en.html#AT-STYLE_TIME_SPECIFICATION
-        end_time defaults to the time of RRD's last received update.
+        end_time defaults to 'now'.
     '''
     if end_time is None:
-        info = rrdtool.info(rrd_fullpath)
-        end_time = str(info['last_update'])
+        end_time = 'now'
 
-    ((start, end, step), ds, rows) = rrdtool.fetch(
-        rrd_fullpath, 'AVERAGE',
+    cmd = [
+        'rrdtool', 'fetch',
+        '--daemon', remote_host,
+        remote_rrd_filepath,
+        'AVERAGE',
         '--start', start_time,
-        '--end', end_time)
+        '--end', end_time,
+    ]
+    proc_res = subprocess.run(cmd, stdout=subprocess.PIPE)
 
-    ts = range(start, end, step)    # `end` is exclusive.
-    assert len(ts) == len(rows)
+    if proc_res.returncode != 0:
+        return None
 
-    ts = pd.to_datetime(ts, unit='s')
-    df_cols = ('time',) + ds
-    df_rows = ((t,) + row for (t, row) in zip(ts, rows))
-    df = pd.DataFrame(data=df_rows, columns=df_cols)
+    # print(proc_res)
+    stdout_str = proc_res.stdout.decode('ascii')
+    # print(stdout_str)
+    return stdout_str
+
+def __stdout_to_dataframe(stdout_str: str) -> pd.DataFrame:
+    stdout_lines = stdout_str.split('\n')
+    (ds_names_line, *row_lines) = stdout_lines
+
+    ds_names = re.split('\s+', ds_names_line)
+    ds_names = list(filter(None, ds_names))
+    ds_names = ['time'] + ds_names
+
+    rows = []
+    row_lines = filter(None, row_lines)
+    for row_line in row_lines:
+        tokens = re.split('\s+', row_line)
+        if tokens[0].endswith(':'):
+            tokens[0] = tokens[0][:-1]
+        tokens[0] = int(tokens[0])
+        for j in range(1, len(tokens)):
+            tokens[j] = float(tokens[j])
+        rows.append(tokens)
+
+    df = pd.DataFrame(data=rows, columns=ds_names)
+    df['time'] = pd.to_datetime(df['time'], unit='s')
     return df
 
-# TODO cleanup ...
-# - Both read_rrd_via_scp and read_rrd_via_stdout should be able to take both ssh key or password.
-def read_rrd_via_scp(device_hostname: str, rrd_filename: str, start_time: str, end_time: str = None) -> Optional[pd.DataFrame]:
-    rrd_filepath = format_rrd_filepath(device_hostname, rrd_filename)
-
-    with tempfile.NamedTemporaryFile() as f:
-        success = download_rrd(rrd_filepath, f.name)
-        if success:
-            return rrd_to_dataframe(f.name, start_time, end_time)
-        else:
-            return None
-
-def read_rrds(device_hostnames: List[str], rrd_filename: str, start_time: str, end_time: str = None) -> Dict[str, pd.DataFrame]:
-    ret = dict()
-    for device_hostname in device_hostnames:
-        rrd = read_rrd_via_scp(device_hostname, rrd_filename, start_time, end_time)
-        if rrd is not None:
-            ret[device_hostname] = rrd
-    return ret
+def read_rrd(*args, **kwargs) -> pd.DataFrame:
+    stdout_str = __rrd_fetch_via_rrdcached(*args, **kwargs)
+    if stdout_str is None:
+        return None
+    df = __stdout_to_dataframe(stdout_str)
+    return df

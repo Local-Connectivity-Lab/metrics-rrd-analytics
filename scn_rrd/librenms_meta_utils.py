@@ -2,32 +2,12 @@
 import os
 from pathlib import Path
 import sys
-from types import SimpleNamespace
 from typing import Optional, Tuple
 
 ## Non-std libs
-from dotenv import dotenv_values
 import pandas as pd
 
-DOTENV_ENTRIES = dotenv_values()
-
-DEVICE_AGNOSTIC_RRD_FILENAMES = SimpleNamespace(
-    latency='ping-perf.rrd',
-    avail_weekly='availability-2592000.rrd',
-    avail_daily='availability-86400.rrd',
-)
-
-## Only eNB devices have these rrd files.
-ENB_DEVICE_RRD_FILENAMES = SimpleNamespace(
-    clients='wireless-sensor-clients-rts-1.rrd'
-)
-
-## Only MikroTik RouterOS devices have these rrd files.
-MIKROTIK_DEVICE_RRD_FILENAMES = SimpleNamespace(
-    clients='routeros_leases.rrd'
-)
-
-_META_FILEPATH='./data/meta.tsv'
+_META_FILEPATH = './data/meta.tsv'
 
 def write_meta(df: pd.DataFrame) -> None:
     os.makedirs(Path(_META_FILEPATH).parent, exist_ok=True)

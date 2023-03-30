@@ -5,11 +5,11 @@ from typing import Any
 import requests
 
 ## Local modules
-from . import rrd_meta_utils
+from .config import DOTENV_ENTRIES
 
-API_URL_PFX = f"http://{rrd_meta_utils.DOTENV_ENTRIES['NMS_HOST_NAME']}/api/v0"
+API_URL_PFX = f"http://{DOTENV_ENTRIES['NMS_HOST_NAME']}/api/v0"
 API_HEADERS = {
-    'Authorization': f"Bearer {rrd_meta_utils.DOTENV_ENTRIES['LIBRENMS_API_TOKEN']}"
+    'Authorization': f"Bearer {DOTENV_ENTRIES['LIBRENMS_API_TOKEN']}"
 }
 def req_librenms(api_url_sfx: str):
     resp = requests.get(f"{API_URL_PFX}{api_url_sfx}", headers=API_HEADERS)
