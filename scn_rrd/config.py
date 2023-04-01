@@ -20,7 +20,8 @@ LOGICAL_LOC_TO_PHYS_LOCS = {
     'northlake': ['northlake'],
     'occ-oromo': ['occ-oromo', 'lihi-southend'],
     'sps-franklin': ['sps-franklin'],
-    'sps-garfield': ['sps-garfield', 'nickelsville-cd']
+    'sps-garfield': ['sps-garfield'],
+    'nickelsville-cd': ['nickelsville-cd'],
 }
 
 PHYS_LOC_TO_LOGICAL_LOC = {
@@ -31,8 +32,8 @@ PHYS_LOC_TO_LOGICAL_LOC = {
 
 ## { ip : physical loc }
 MONITOR_DEVICES = {
-    '10.10.0.2': 'FCS',
+#    '10.10.0.2': 'FCS',
     '10.10.0.3': 'sps-franklin',
-    '10.10.0.204': 'lihi-southend',
+#    '10.10.0.204': 'lihi-southend',
     '10.10.0.206': 'nickelsville-cd',
 }
